@@ -1,275 +1,444 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>DICE FLIP</title>
+<title>DICE GAMES</title>
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050714;color:#fff;font-family:monospace;touch-action:manipulation}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#060816;color:#fff;font-family:monospace}
 body{position:fixed;inset:0}
-.app{width:100%;height:100dvh;overflow:hidden;display:flex;justify-content:center;align-items:flex-start;padding:max(env(safe-area-inset-top),10px) 8px max(env(safe-area-inset-bottom),14px);background:radial-gradient(circle at top,#334b8e,#050714 72%)}
-.screen{width:100%;max-width:430px;height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);overflow:hidden;position:relative;display:flex;flex-direction:column;background:#101832;border:5px solid #ffe27a;border-radius:18px;box-shadow:0 0 0 5px #000,0 0 30px #4d7cff;padding:10px}
-.screen:before{content:"";position:absolute;inset:0;z-index:20;pointer-events:none;background:linear-gradient(transparent 50%,rgba(255,255,255,.035) 51%);background-size:100% 6px}
-.star{position:absolute;width:4px;height:4px;background:#fff;opacity:.55;animation:twinkle 1.5s infinite alternate}
-.moon{position:absolute;right:18px;top:18px;width:38px;height:38px;background:#ffeaa7;box-shadow:0 0 22px #ffeaa7;animation:moon 2s infinite alternate}
-.content{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;overflow:hidden}
-.title{text-align:center;font-size:24px;font-weight:900;color:#ffe27a;text-shadow:3px 3px #000,5px 5px #5f3cff;margin:2px 0 6px;letter-spacing:2px}
-.hud{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:7px;margin-bottom:6px;flex:0 0 auto}
-.box{border:3px solid #fff;background:#091024;padding:6px;text-align:center;box-shadow:3px 3px #000;color:#9be7ff;font-size:12px}
-.big{font-size:20px;color:#ffe27a;text-shadow:3px 3px #000}
-.row{display:flex;gap:8px;margin-top:6px;flex:0 0 auto}
-.btn,.menuCard{border:4px solid #fff;background:#283f7a;color:#fff;font-weight:900;font-family:monospace;box-shadow:4px 4px #000;text-shadow:2px 2px #000}
-.btn{flex:1;padding:9px 6px;font-size:14px}
-.btn:active,.menuCard:active{transform:translate(3px,3px);box-shadow:1px 1px #000}
-.gold{background:#a36a13;color:#fff3b0}.red{background:#8b2137}.green{background:#17724e}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:1;overflow:hidden;align-content:center}
-.menuGrid{grid-template-columns:repeat(3,1fr)}
-.menuCard{height:82px;font-size:22px;color:#ffe27a;position:relative}
-.menuCard:before{content:"";position:absolute;inset:7px;border:2px dashed #ffe27a}
-.menuCard span{font-size:34px;color:#fff3b0}
-.startCard{background:#17724e;font-size:36px}
+#app{height:100dvh;padding:max(env(safe-area-inset-top),10px) 10px max(env(safe-area-inset-bottom),14px);display:flex;justify-content:center;background:radial-gradient(circle at top,#314a8c,#070915 72%)}
+.game{width:100%;max-width:430px;height:100%;border:5px solid #ffe27a;border-radius:18px;background:#11182f;box-shadow:0 0 0 5px #000,0 0 28px #416cff;position:relative;overflow:hidden;padding:10px}
+.bg{position:absolute;inset:0;background:radial-gradient(#fff 1.5px,transparent 2px) 20px 30px/90px 90px,radial-gradient(#9be7ff 1px,transparent 2px) 60px 80px/110px 110px;opacity:.55;animation:twinkle 1.4s infinite alternate}
+.scan{position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(255,255,255,.04) 51%);background-size:100% 6px;pointer-events:none;z-index:9}
+.ui{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;gap:8px}
+.title{text-align:center;font-size:25px;font-weight:900;color:#ffe27a;text-shadow:3px 3px #000,5px 5px #5d39ff;letter-spacing:2px}
+.row{display:flex;gap:7px}
+button{font-family:monospace;font-weight:900;color:#fff;background:#263b77;border:4px solid #fff;box-shadow:4px 4px #000;text-shadow:2px 2px #000}
+button:active{transform:translate(3px,3px);box-shadow:1px 1px #000}
+.small{flex:1;height:38px;font-size:13px}
+.gold{background:#a36a13;color:#fff3b0}.red{background:#842036}.green{background:#16724d}
+.hud{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:7px}
+.panel{border:3px solid #fff;background:#091024;box-shadow:3px 3px #000;text-align:center;padding:6px;font-size:12px;color:#9be7ff}
+.big{display:block;color:#ffe27a;font-size:20px;text-shadow:3px 3px #000}
+.menu{flex:1;display:flex;flex-direction:column;gap:10px;justify-content:center}
+.menuBtn{height:86px;font-size:28px;background:linear-gradient(#31498f,#1d2c63)}
+.jk{height:60px;font-size:25px;background:linear-gradient(#31498f,#1d2c63);color:#ffe27a}
+.jk.on{background:linear-gradient(#e0a91f,#9f6c0c);color:#fff3b0}
+.go{height:76px;font-size:42px;background:linear-gradient(#31b95f,#16713b)}
+.msg{text-align:center;height:28px;font-size:24px;color:#ffe27a;text-shadow:4px 4px #000}
 
-.card{height:72px;position:relative;border:3px solid #111;border-radius:8px;box-shadow:0 0 0 3px #fff,0 0 0 5px #000,0 0 11px #4d7cff;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#172345}
-.card.back{background:linear-gradient(135deg,#193168,#0b1538)}
-.card.back:before{content:"";position:absolute;inset:8px;border:3px solid #ffe27a}
-.card.back:after{content:"";position:absolute;inset:16px;background:repeating-linear-gradient(45deg,#ffe27a 0 3px,transparent 3px 7px),repeating-linear-gradient(-45deg,#4d7cff 0 3px,transparent 3px 7px);opacity:.9}
-.card.open{animation:cardOpen .34s ease}
-.card.open:after{content:"";position:absolute;inset:-40%;background:linear-gradient(120deg,transparent 40%,rgba(255,255,255,.65) 50%,transparent 60%);animation:shine .45s ease;pointer-events:none}
-.card.safe{background:linear-gradient(145deg,#fffdf1,#e9ddad)}
-.card.safe:before,.card.joker:before{content:"";position:absolute;inset:7px;border:3px double #303030;opacity:.75}
-.card.joker{background:#f7f4e8;box-shadow:0 0 0 3px #fff,0 0 0 5px #000,0 0 22px #ff3860}
+/* GAME 1 */
+.grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;align-content:center;justify-items:center}
+.card{width:100%;max-width:72px;aspect-ratio:2.5/3.5;border:3px solid #111;border-radius:10px;box-shadow:0 0 0 3px #fff,0 0 0 5px #000,0 0 12px #4d7cff;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.back{background:linear-gradient(135deg,#193168,#0b1538)}
+.back:before{content:"";position:absolute;inset:8px;border:3px solid #ffe27a}
+.back:after{content:"";position:absolute;inset:15px;background:repeating-linear-gradient(45deg,#ffe27a 0 3px,transparent 3px 7px),repeating-linear-gradient(-45deg,#4d7cff 0 3px,transparent 3px 7px)}
+.open{animation:flip .28s ease}
+.safeCard{background:radial-gradient(circle at 50% 40%,#fff7c2,#d8a83a 65%,#8b5d16)}
+.jokerCard{background:radial-gradient(circle at 50% 40%,#ffdddd,#8b1028 70%,#31000c);box-shadow:0 0 0 3px #fff,0 0 0 5px #000,0 0 22px #ff3860}
+.icon{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60px;height:60px;image-rendering:pixelated}
+.clown{width:58px;height:62px;animation:jokerMove .65s steps(1) infinite}
+.chest{animation:safeMove .9s steps(1) infinite}
 
-.safeIcon{position:absolute;width:58px;height:58px;z-index:4;image-rendering:pixelated;animation:safe3 1.05s steps(1,end) infinite}
-.clownIcon{position:absolute;width:58px;height:66px;z-index:4;image-rendering:pixelated;animation:joker3 .78s steps(1,end) infinite}
-.jokerText{position:absolute;font-size:9px;font-weight:900;color:#444;writing-mode:vertical-rl;letter-spacing:-1px;z-index:5}
-.jokerText.left{left:7px;top:8px}
-.jokerText.right{right:7px;bottom:8px;transform:rotate(180deg)}
-
-.msg{text-align:center;margin:6px 0 0;font-size:24px;color:#ffe27a;text-shadow:4px 4px #000;min-height:28px;flex:0 0 auto}
-.diceBox{height:70px;display:flex;justify-content:center;align-items:center;perspective:500px}
-.diceActive{cursor:pointer;animation:diceGlow 1s infinite alternate}
-.dice3d{width:52px;height:52px;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.15,1.2,.3,1)}
-.roll{animation:spin .45s steps(8,end) infinite}
-.face3d{position:absolute;width:52px;height:52px;background:#f8f0d0;border:4px solid #111;box-shadow:inset -6px -6px #b8a56e,inset 4px 4px #fff}
-.f1{transform:rotateX(90deg) translateZ(26px)}.f2{transform:translateZ(26px)}.f3{transform:rotateY(90deg) translateZ(26px)}.f4{transform:rotateY(-90deg) translateZ(26px)}.f5{transform:rotateY(180deg) translateZ(26px)}.f6{transform:rotateX(-90deg) translateZ(26px)}
+/* 3D DICE */
+.diceBox{height:62px;display:flex;align-items:center;justify-content:center;perspective:500px}
+.diceBox.ready{animation:diceGlow 1s infinite alternate}
+.dice{width:50px;height:50px;position:relative;transform-style:preserve-3d;transition:.5s cubic-bezier(.15,1.2,.3,1)}
+.roll{animation:spin .45s steps(8) infinite}
+.face{position:absolute;width:50px;height:50px;background:#f8f0d0;border:4px solid #111;box-shadow:inset -6px -6px #b8a56e,inset 4px 4px #fff}
+.f1{transform:rotateX(90deg) translateZ(25px)}.f2{transform:translateZ(25px)}.f3{transform:rotateY(90deg) translateZ(25px)}.f4{transform:rotateY(-90deg) translateZ(25px)}.f5{transform:rotateY(180deg) translateZ(25px)}.f6{transform:rotateX(-90deg) translateZ(25px)}
 .show1{transform:rotateX(-90deg)}.show2{transform:rotateX(0)}.show3{transform:rotateY(-90deg)}.show4{transform:rotateY(90deg)}.show5{transform:rotateY(180deg)}.show6{transform:rotateX(90deg)}
-.dp{position:absolute;width:8px;height:8px;background:#111;border-radius:1px}.c{left:18px;top:18px}.tl{left:9px;top:9px}.tr{right:9px;top:9px}.bl{left:9px;bottom:9px}.br{right:9px;bottom:9px}.ml{left:9px;top:18px}.mr{right:9px;top:18px}
+.dot{position:absolute;width:7px;height:7px;background:#111}.c{left:18px;top:18px}.tl{left:9px;top:9px}.tr{right:9px;top:9px}.bl{left:9px;bottom:9px}.br{right:9px;bottom:9px}.ml{left:9px;top:18px}.mr{right:9px;top:18px}
 
-@keyframes cardOpen{0%{transform:rotateY(90deg) scale(.9);filter:brightness(1.8)}70%{transform:rotateY(0) scale(1.06)}100%{transform:scale(1)}}
-@keyframes shine{from{transform:translateX(-60%)}to{transform:translateX(60%)}}
-@keyframes spin{to{transform:rotateX(520deg) rotateY(680deg) rotateZ(180deg)}}
-@keyframes diceGlow{from{filter:drop-shadow(0 0 3px #ffe27a);transform:scale(1)}to{filter:drop-shadow(0 0 10px #ffe27a) drop-shadow(0 0 18px #4d7cff);transform:scale(1.05)}}
-@keyframes twinkle{from{opacity:.18;transform:scale(.8)}to{opacity:.9;transform:scale(1.2)}}
-@keyframes moon{to{box-shadow:0 0 34px #ffeaa7}}
-@keyframes safe3{0%{transform:translateY(0) scale(1)}33%{transform:translateY(-1px) scale(1.02)}66%{transform:translateY(1px) scale(.99)}100%{transform:translateY(0) scale(1)}}
-@keyframes joker3{0%{transform:translateY(0) rotate(0)}33%{transform:translateY(-1px) rotate(-2deg)}66%{transform:translateY(1px) rotate(2deg)}100%{transform:translateY(0) rotate(0)}}
+/* GAME 2 */
+.stage{flex:1;position:relative;overflow:hidden;border:4px solid #fff;background:linear-gradient(#101936,#080b18);box-shadow:4px 4px #000;touch-action:manipulation}
+.stage:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 25%,rgba(77,124,255,.25),transparent 45%);z-index:0}
+.world{position:absolute;left:0;top:0;width:100%;height:100%;z-index:1}
+.centerLine{position:absolute;left:50%;top:0;bottom:0;width:3px;background:#ffe27a;box-shadow:0 0 12px #ffe27a;z-index:2;opacity:.65}
+.previewDice{position:absolute;width:66px;height:66px;transform:translate(-50%,-50%);background:#f8f0d0;border:5px solid #111;box-shadow:inset -7px -7px #b8a56e,inset 4px 4px #fff,0 0 16px #ffe27a;z-index:4}
+.warn{animation:warn .25s infinite alternate}
+
+@keyframes twinkle{to{opacity:.9}}
+@keyframes flip{0%{transform:rotateY(90deg) scale(.85);filter:brightness(2)}100%{transform:rotateY(0) scale(1)}}
+@keyframes safeMove{33%{transform:translate(-50%,-54%) scale(1.05);filter:drop-shadow(0 0 10px #ffe27a)}66%{transform:translate(-50%,-48%)}}
+@keyframes jokerMove{33%{transform:translate(-50%,-54%) rotate(-5deg) scale(1.05);filter:drop-shadow(0 0 12px #ff3860)}66%{transform:translate(-50%,-48%) rotate(5deg)}}
+@keyframes diceGlow{to{filter:drop-shadow(0 0 12px #ffe27a) drop-shadow(0 0 16px #4d7cff);transform:scale(1.04)}}
+@keyframes spin{to{transform:rotateX(560deg) rotateY(660deg) rotateZ(180deg)}}
+@keyframes warn{from{filter:drop-shadow(0 0 0 red)}to{filter:drop-shadow(0 0 18px red)}}
 </style>
 </head>
 
 <body>
-<div class="app"><div class="screen" id="screen"></div></div>
+<div id="app"><div class="game"><div class="bg"></div><div class="scan"></div><div class="ui" id="ui"></div></div></div>
 
 <script>
-const screen=document.getElementById("screen");
-let deck=[],turn=1,phase="home",jokerCount=4,dice=1,mustOpen=0,openedThisTurn=0,gameOver=false;
-let ctx,master,bgmTimer,bgmOn=false,sfxOn=true,audioReady=false,lastSound=0;
+const ui=document.getElementById("ui");
 
-function bg(){
- let h='<div class="moon"></div>';
- [[8,16],[18,9],[28,22],[42,13],[57,19],[70,11],[83,23],[91,15],[12,42],[35,35],[64,38],[78,47],[23,58],[52,55],[88,62]]
- .forEach((d,i)=>h+=`<i class="star" style="left:${d[0]}%;top:${d[1]}%;animation-delay:${i*.08}s"></i>`);
- return h+'<div class="content">';
-}
-function end(){return'</div>'}
+let screen="select";
+let deck=[],jk=4,turn=1,phase="menu",dice=1,must=0,opened=0,over=false;
 
-function unlockAudio(){
- if(!audioReady){
-  ctx=new (window.AudioContext||window.webkitAudioContext)();
-  master=ctx.createGain();
-  master.gain.value=.85;
-  master.connect(ctx.destination);
-  audioReady=true;
- }
+let ctx,sfxOn=true,bgmOn=false,bgm;
+
+let engine,render,runner,canvas,stage;
+let floors=[],player=1,need=0,placed=0,g2Phase="roll",fall=false;
+let cameraY=0,previewLoop=false;
+let stageW=0,stageH=0,groundY=0;
+
+function audio(){
+ ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();
  if(ctx.state==="suspended")ctx.resume();
- const o=ctx.createOscillator(),g=ctx.createGain();
- o.frequency.value=1;g.gain.value=.0001;o.connect(g);g.connect(master);o.start();o.stop(ctx.currentTime+.01);
 }
-["touchstart","pointerdown","click"].forEach(e=>document.addEventListener(e,unlockAudio,{once:true,passive:true}));
+addEventListener("pointerdown",audio,{once:true});
 
-function tone(f,t=.08,type="square",gain=.05,bgm=false){
- if(!audioReady)unlockAudio();
- if(!bgm&&!sfxOn)return;
- const o=ctx.createOscillator(),g=ctx.createGain();
- o.type=type;o.frequency.value=f;g.gain.value=gain;o.connect(g);g.connect(master);o.start();
- g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t);
+function tone(f,t=.07,type="square",g=.04){
+ if(!sfxOn)return; audio();
+ const o=ctx.createOscillator(),v=ctx.createGain();
+ o.type=type;o.frequency.value=f;v.gain.value=g;
+ o.connect(v);v.connect(ctx.destination);o.start();
+ v.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t);
  o.stop(ctx.currentTime+t+.01);
 }
-function kick(gain=.15,bgm=false){
- if(!audioReady)unlockAudio();
- if(!bgm&&!sfxOn)return;
- const o=ctx.createOscillator(),g=ctx.createGain();
- o.type="sine";o.frequency.setValueAtTime(120,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(38,ctx.currentTime+.16);
- g.gain.setValueAtTime(gain,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.18);
- o.connect(g);g.connect(master);o.start();o.stop(ctx.currentTime+.2);
-}
-function noise(t=.04,gain=.03,bgm=false){
- if(!audioReady)unlockAudio();
- if(!bgm&&!sfxOn)return;
- const b=ctx.createBuffer(1,ctx.sampleRate*t,ctx.sampleRate),d=b.getChannelData(0);
+
+function noise(){
+ if(!sfxOn)return; audio();
+ const b=ctx.createBuffer(1,ctx.sampleRate*.035,ctx.sampleRate),d=b.getChannelData(0);
  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
  const s=ctx.createBufferSource(),g=ctx.createGain();
- s.buffer=b;g.gain.value=gain;s.connect(g);g.connect(master);s.start();
+ g.gain.value=.035;s.buffer=b;s.connect(g);g.connect(ctx.destination);s.start();
 }
-function rollSound(){
- unlockAudio();
- for(let i=0;i<9;i++)setTimeout(()=>{noise(.025,.035);tone(180+Math.random()*220,.035,"square",.025)},i*55);
- setTimeout(()=>kick(.16),80);
- setTimeout(()=>kick(.12),260);
- setTimeout(()=>{noise(.04,.05);tone(520,.05,"triangle",.045);setTimeout(()=>tone(300,.04,"square",.03),45)},520);
-}
-function sfx(type){
- if(!sfxOn)return;
- const now=Date.now();if(now-lastSound<30)return;lastSound=now;unlockAudio();
- if(type==="roll"){rollSound();return}
- if(type==="joker"){kick(.22);noise(.09,.06);[180,120,80].forEach((f,i)=>setTimeout(()=>tone(f,.1,"sawtooth",.08),i*80));return}
- const seq={safe:[620,920],click:[480,620],start:[300,420,560,740],finish:[520,660,780,1040,1240],next:[420,520,640]}[type]||[520];
- seq.forEach((f,i)=>setTimeout(()=>tone(f,.07,"square",.045),i*60));
-}
-function startBgm(){
- unlockAudio();stopBgm();bgmOn=true;
- let step=0,lead=[440,0,523,0,659,0,523,392];
- bgmTimer=setInterval(()=>{
-  if(!bgmOn)return;
-  if(step%2===0)kick(.055,true);
-  if(lead[step%lead.length])tone(lead[step%lead.length],.075,"square",.015,true);
-  if(step%4===2)noise(.025,.01,true);
-  step++;
- },150);
-}
-function stopBgm(){bgmOn=false;if(bgmTimer)clearInterval(bgmTimer),bgmTimer=null}
-function toggleBgm(){unlockAudio();bgmOn?stopBgm():startBgm();renderSame()}
-function toggleSfx(){unlockAudio();sfxOn=!sfxOn;if(sfxOn)sfx("click");renderSame()}
-function audioButtons(){return `<div class="row"><button class="btn gold" onclick="toggleBgm()">BGM ${bgmOn?"ON":"OFF"}</button><button class="btn gold" onclick="toggleSfx()">SFX ${sfxOn?"ON":"OFF"}</button></div>`}
-function renderSame(){phase==="home"?home():draw("")}
 
-function shuffle(a){return a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
-function pipHTML(n){return({1:["c"],2:["tl","br"],3:["tl","c","br"],4:["tl","tr","bl","br"],5:["tl","tr","c","bl","br"],6:["tl","tr","ml","mr","bl","br"]}[n]).map(x=>`<i class="dp ${x}"></i>`).join("")}
+function fx(t){
+ if(t==="roll"){
+  for(let i=0;i<8;i++)setTimeout(()=>{noise();tone(180+Math.random()*230,.03)},i*55);
+  return;
+ }
+ if(t==="bad"){tone(110,.12,"sawtooth",.08);setTimeout(()=>tone(70,.16,"sawtooth",.07),90);return}
+ if(t==="win"){[520,660,780,1040].forEach((f,i)=>setTimeout(()=>tone(f,.08),i*80));return}
+ if(t==="drop"){tone(280,.06,"triangle",.06);noise();return}
+ [620,900].forEach((f,i)=>setTimeout(()=>tone(f,.05),i*60));
+}
+
+function toggleSfx(){sfxOn=!sfxOn;renderApp()}
+function toggleBgm(){
+ audio();bgmOn=!bgmOn;
+ if(bgmOn){
+  let s=0;
+  bgm=setInterval(()=>{
+   let n=[220,0,330,0,440,0,330,165][s++%8];
+   if(n)tone(n,.06,"square",.015);
+  },150);
+ }else clearInterval(bgm);
+ renderApp();
+}
+function topbar(){
+ return `<div class="row"><button class="small gold" onclick="toggleBgm()">BGM ${bgmOn?"ON":"OFF"}</button><button class="small gold" onclick="toggleSfx()">SFX ${sfxOn?"ON":"OFF"}</button></div>`;
+}
+
+function pips(n){
+ return ({
+  1:["c"],2:["tl","br"],3:["tl","c","br"],
+  4:["tl","tr","bl","br"],5:["tl","tr","c","bl","br"],
+  6:["tl","tr","ml","mr","bl","br"]
+ }[n]).map(x=>`<i class="dot ${x}"></i>`).join("");
+}
+
 function diceHTML(){
- return `<div class="diceBox ${phase==='roll'&&!gameOver?'diceActive':''}" onclick="rollDice()">
- <div class="dice3d ${phase==='rolling'?'roll':'show'+dice}">
- ${[1,2,3,4,5,6].map(n=>`<div class="face3d f${n}">${pipHTML(n)}</div>`).join("")}
- </div></div>`;
+ let ready=(screen==="g2"?g2Phase==="roll":phase==="roll")&&!over&&!fall;
+ return `<div class="diceBox ${ready?"ready":""}" onclick="${screen==='g2'?'rollG2()':'rollG1()'}"><div class="dice ${(phase==="rolling"||g2Phase==="rolling")?"roll":"show"+dice}">${[1,2,3,4,5,6].map(n=>`<div class="face f${n}">${pips(n)}</div>`).join("")}</div></div>`;
 }
 
-function safeArt(){
-return `
-<svg class="safeIcon" viewBox="0 0 16 16">
-<rect x="5" y="1" width="6" height="1" fill="#1b2a5a"/>
-<rect x="3" y="2" width="10" height="2" fill="#ffcf24"/>
-<rect x="2" y="4" width="12" height="5" fill="#ffd92e"/>
-<rect x="1" y="5" width="2" height="4" fill="#ffcf24"/>
-<rect x="13" y="5" width="2" height="4" fill="#ffcf24"/>
-<rect x="3" y="9" width="10" height="1" fill="#c47918"/>
-<rect x="6" y="10" width="4" height="2" fill="#ffcf24"/>
-<rect x="5" y="12" width="6" height="1" fill="#1b2a5a"/>
-<rect x="3" y="13" width="10" height="2" fill="#df583e"/>
-<rect x="2" y="15" width="12" height="1" fill="#5c7a2c"/>
-<rect x="6" y="5" width="1" height="3" fill="#21a6b8"/>
-<rect x="7" y="6" width="3" height="1" fill="#21a6b8"/>
-<rect x="4" y="4" width="2" height="3" fill="#fff"/>
-</svg>`;
+function selectScreen(){
+ screen="select";
+ stopMatter();
+ ui.innerHTML=`<div class="title">DICE GAMES</div>${topbar()}<div class="menu"><button class="menuBtn" onclick="game1Menu()">GAME 1<br>JOKER FLIP</button><button class="menuBtn" onclick="game2Start()">GAME 2<br>DICE TOWER</button></div>`;
 }
 
-function clownArt(){
-return `
-<div class="jokerText left">JOKER</div>
-<svg class="clownIcon" viewBox="0 0 18 22">
-<rect x="7" y="0" width="4" height="2" fill="#e95555"/>
-<rect x="5" y="2" width="8" height="3" fill="#e95555"/>
-<rect x="3" y="4" width="3" height="4" fill="#f3b24d"/>
-<rect x="12" y="4" width="3" height="4" fill="#f3b24d"/>
-<rect x="6" y="6" width="6" height="1" fill="#111"/>
-<rect x="5" y="7" width="8" height="6" fill="#f7d7a7"/>
-<rect x="6" y="8" width="2" height="1" fill="#ffcf24"/>
-<rect x="10" y="8" width="2" height="1" fill="#ffcf24"/>
-<rect x="7" y="10" width="4" height="1" fill="#e95555"/>
-<rect x="6" y="11" width="6" height="1" fill="#e95555"/>
-<rect x="3" y="13" width="12" height="5" fill="#5bbcff"/>
-<rect x="2" y="14" width="2" height="4" fill="#3d8fd6"/>
-<rect x="14" y="14" width="2" height="4" fill="#3d8fd6"/>
-<rect x="5" y="18" width="3" height="2" fill="#111"/>
-<rect x="10" y="18" width="3" height="2" fill="#111"/>
-<rect x="4" y="20" width="2" height="1" fill="#e95555"/>
-<rect x="12" y="20" width="2" height="1" fill="#e95555"/>
-</svg>
-<div class="jokerText right">JOKER</div>`;
+/* GAME 1 */
+function chest(){
+ return `<svg class="icon chest" viewBox="0 0 64 64"><rect x="10" y="20" width="44" height="34" fill="#2a1607"/><rect x="14" y="24" width="36" height="26" fill="#b56b20"/><rect x="16" y="26" width="32" height="8" fill="#f3b23b"/><rect x="14" y="34" width="36" height="4" fill="#46240d"/><rect x="18" y="40" width="28" height="8" fill="#8b4b19"/><rect x="26" y="31" width="12" height="15" fill="#ffe27a"/><rect x="28" y="34" width="8" height="6" fill="#1fc7e8"/><rect x="8" y="18" width="48" height="8" fill="#1b1007"/><rect x="12" y="16" width="40" height="8" fill="#ffcf24"/><rect x="17" y="18" width="10" height="3" fill="#fff2a6"/><rect x="37" y="18" width="8" height="3" fill="#9a5a18"/><rect x="9" y="52" width="46" height="4" fill="#111"/></svg>`;
 }
-
-function cardHTML(c,i){
+function clown(){
+ return `<svg class="icon clown" viewBox="0 0 64 64"><rect x="20" y="4" width="24" height="8" fill="#111"/><rect x="16" y="8" width="32" height="10" fill="#b40023"/><rect x="10" y="12" width="12" height="12" fill="#f3c04d"/><rect x="42" y="12" width="12" height="12" fill="#f3c04d"/><rect x="18" y="18" width="28" height="30" fill="#111"/><rect x="21" y="21" width="22" height="22" fill="#f7d7a7"/><rect x="35" y="22" width="8" height="20" fill="#d49b75"/><rect x="24" y="28" width="6" height="4" fill="#fff"/><rect x="34" y="28" width="6" height="4" fill="#fff"/><rect x="26" y="30" width="2" height="2" fill="#111"/><rect x="36" y="30" width="2" height="2" fill="#111"/><rect x="31" y="34" width="4" height="4" fill="#ff304d"/><rect x="26" y="40" width="12" height="2" fill="#111"/><rect x="28" y="42" width="8" height="3" fill="#ff304d"/><rect x="14" y="48" width="36" height="10" fill="#111"/><rect x="18" y="50" width="14" height="7" fill="#4db7ff"/><rect x="32" y="50" width="14" height="7" fill="#2f82d0"/><rect x="20" y="52" width="5" height="3" fill="#ffe066"/><rect x="39" y="52" width="5" height="3" fill="#ffe066"/></svg>`;
+}
+function card(c,i){
  if(!c.open)return `<div class="card back" onclick="flip(${i})"></div>`;
- if(c.type==="joker")return `<div class="card open joker">${clownArt()}</div>`;
- return `<div class="card open safe">${safeArt()}</div>`;
+ return `<div class="card open ${c.type==="bad"?"jokerCard":"safeCard"}">${c.type==="bad"?clown():chest()}</div>`;
 }
-
-function home(){
- phase="home";
- screen.innerHTML=bg()+`
- <div class="title">DICE FLIP</div>
- ${audioButtons()}
- <div class="hud">
-  <div class="box">P1<br><span class="big">READY</span></div>
-  <div class="box">${diceHTML()}</div>
-  <div class="box">P2<br><span class="big">READY</span></div>
- </div>
- <div class="grid menuGrid">
-  ${[4,5,6,7,8].map(n=>`<button class="menuCard" onclick="setJoker(${n})">JK<br><span>${n}</span></button>`).join("")}
-  <button class="menuCard startCard" onclick="start()">GO</button>
- </div>
- <div class="msg">JK ${jokerCount}</div>`+end();
+function game1Shell(mid,msg=""){
+ let count=deck.filter(x=>x.type==="bad"&&x.open).length;
+ ui.innerHTML=`<div class="title">JOKER FLIP</div>${topbar()}<div class="hud"><div class="panel">P${turn}<span class="big">${phase==="open"?opened+"/"+must:"GO"}</span></div><div class="panel">${diceHTML()}</div><div class="panel">JK<span class="big">${count}/${jk}</span></div></div>${mid}<div class="msg">${msg}</div>`;
 }
-function setJoker(n){jokerCount=n;sfx("click");home()}
-function start(){
- sfx("start");
- deck=shuffle([...Array.from({length:20-jokerCount},()=>({type:"safe",open:false})),...Array.from({length:jokerCount},()=>({type:"joker",open:false}))]);
- turn=1;dice=1;mustOpen=0;openedThisTurn=0;gameOver=false;phase="roll";draw("GO");
+function game1Menu(){
+ screen="g1";stopMatter();phase="menu";
+ game1Shell(`<div class="menu">${[4,5,6,7,8].map(n=>`<button class="jk ${jk===n?"on":""}" onclick="jk=${n};game1Menu()">JOKER ${n}</button>`).join("")}<button class="go" onclick="startG1()">GO</button><button class="small red" onclick="selectScreen()">BACK</button></div>`,`JK ${jk}`);
 }
-function rollDice(){
- if(phase!=="roll"||gameOver)return;
- sfx("roll");phase="rolling";draw("GO");
+function startG1(){
+ deck=[...Array.from({length:20-jk},()=>({type:"safe",open:false})),...Array.from({length:jk},()=>({type:"bad",open:false}))].sort(()=>Math.random()-.5);
+ turn=1;dice=1;opened=0;must=0;over=false;phase="roll";
+ fx("win");
+ drawG1("GO");
+}
+function drawG1(msg=""){
+ game1Shell(`<div class="grid">${deck.map(card).join("")}</div><div class="row"><button class="small red" onclick="game1Menu()">RESET</button><button class="small gold" onclick="startG1()">RETRY</button></div>`,msg);
+}
+function rollG1(){
+ if(phase!=="roll"||over)return;
+ phase="rolling";fx("roll");drawG1("GO");
  setTimeout(()=>{
-  dice=1+Math.floor(Math.random()*6);
-  mustOpen=Math.min(dice,deck.filter(c=>!c.open).length);
-  openedThisTurn=0;phase="open";draw("OPEN");
- },720);
-}
-function draw(msg=""){
- let jk=deck.filter(c=>c.type==="joker"&&c.open).length;
- screen.innerHTML=bg()+`
- <div class="title">DICE FLIP</div>
- ${audioButtons()}
- <div class="hud">
-  <div class="box">P${turn}<br><span class="big">${phase==="open"?openedThisTurn+"/"+mustOpen:"GO"}</span></div>
-  <div class="box">${diceHTML()}</div>
-  <div class="box">JK<br><span class="big">${jk}/${jokerCount}</span></div>
- </div>
- <div class="grid">${deck.map(cardHTML).join("")}</div>
- <div class="msg">${msg}</div>
- <div class="row"><button class="btn red" onclick="home()">RESET</button><button class="btn gold" onclick="start()">RETRY</button></div>`+end();
+  dice=Math.floor(Math.random()*6)+1;
+  must=Math.min(dice,deck.filter(x=>!x.open).length);
+  opened=0;phase="open";drawG1("OPEN");
+ },700);
 }
 function flip(i){
- if(gameOver||phase!=="open"||deck[i].open)return;
- deck[i].open=true;openedThisTurn++;
- let msg="OK";
- if(deck[i].type==="joker"){sfx("joker");msg="LOSE"}else{sfx("safe")}
- let jk=deck.filter(c=>c.type==="joker"&&c.open).length;
- if(jk>=jokerCount){gameOver=true;phase="end";setTimeout(()=>sfx("finish"),220);draw("WIN");return}
- if(openedThisTurn>=mustOpen){
-  turn=turn===1?2:1;dice=1;mustOpen=0;openedThisTurn=0;phase="roll";sfx("next");draw("GO");return;
- }
- draw(msg);
+ if(phase!=="open"||deck[i].open||over)return;
+ deck[i].open=true;opened++;
+ let bad=deck[i].type==="bad";
+ fx(bad?"bad":"safe");
+ let count=deck.filter(x=>x.type==="bad"&&x.open).length;
+ if(count>=jk){over=true;fx("win");drawG1("WIN");return}
+ if(opened>=must){
+  turn=turn===1?2:1;
+  phase="roll";opened=0;must=0;dice=1;
+  setTimeout(()=>drawG1("GO"),350);
+ }else drawG1(bad?"LOSE":"OK");
 }
-home();
+
+/* GAME 2 - TRUE DICE STACK */
+function game2Start(){
+ screen="g2";
+ stopMatter();
+ turn=1;player=1;dice=1;floors=[];need=0;placed=0;
+ g2Phase="roll";fall=false;cameraY=0;previewLoop=false;
+
+ ui.innerHTML=`<div class="title">DICE TOWER</div>${topbar()}<div class="hud"><div class="panel">P1<span class="big" id="g2p">READY</span></div><div class="panel">${diceHTML()}</div><div class="panel">BAL<span class="big" id="bal">0</span></div></div><div class="stage" id="stage"><canvas class="world" id="world"></canvas><div class="centerLine"></div><div class="previewDice" id="preview" style="display:none"></div></div><div class="msg" id="g2msg">ROLL</div><div class="row"><button class="small red" onclick="selectScreen()">BACK</button><button class="small gold" onclick="game2Start()">RETRY</button></div>`;
+ setTimeout(initMatter,50);
+}
+
+function initMatter(){
+ const M=Matter;
+ stage=document.getElementById("stage");
+ canvas=document.getElementById("world");
+
+ const r=stage.getBoundingClientRect();
+ stageW=r.width;
+ stageH=r.height;
+ canvas.width=stageW;
+ canvas.height=stageH;
+
+ engine=M.Engine.create();
+ engine.gravity.y=1.25;
+
+ render=M.Render.create({
+  canvas,
+  engine,
+  options:{
+   width:stageW,
+   height:stageH,
+   wireframes:false,
+   background:"transparent",
+   hasBounds:true
+  }
+ });
+
+ groundY=stageH-34;
+ const ground=M.Bodies.rectangle(stageW/2,groundY,stageW+120,26,{
+  isStatic:true,
+  render:{fillStyle:"#5b3b18",strokeStyle:"#ffe27a",lineWidth:4}
+ });
+
+ M.Composite.add(engine.world,[ground]);
+ runner=M.Runner.create();
+ M.Render.run(render);
+ M.Runner.run(runner,engine);
+ M.Events.on(engine,"afterUpdate",updateG2);
+}
+
+function stopMatter(){
+ if(render){
+  Matter.Render.stop(render);
+  Matter.Runner.stop(runner);
+  Matter.Composite.clear(engine.world);
+  Matter.Engine.clear(engine);
+  render=null;engine=null;runner=null;
+ }
+}
+
+function makeDiceBlock(x,y){
+ return Matter.Bodies.rectangle(x,y,66,66,{
+  restitution:.02,
+  friction:.96,
+  frictionStatic:1,
+  density:.004,
+  render:{fillStyle:"#f8f0d0",strokeStyle:"#111",lineWidth:5}
+ });
+}
+
+function getStackTopY(){
+ if(!floors.length)return groundY-33;
+ return Math.min(...floors.map(b=>b.position.y))-66;
+}
+
+function getDropPos(){
+ let swing=Math.sin(Date.now()/320)*54;
+ let y=getStackTopY()-105;
+ return {x:stageW/2+swing,y};
+}
+
+function updatePreview(){
+ if(screen!=="g2"||g2Phase!=="drop"||fall)return;
+
+ let p=getDropPos();
+ let pv=document.getElementById("preview");
+
+ if(pv){
+  pv.style.display="block";
+  pv.style.left=p.x+"px";
+  pv.style.top=(p.y-cameraY)+"px";
+  pv.innerHTML=pips(dice);
+ }
+
+ requestAnimationFrame(updatePreview);
+}
+
+function rollG2(){
+ if(g2Phase!=="roll"||fall)return;
+ g2Phase="rolling";
+ fx("roll");
+
+ let d=document.querySelector(".dice");
+ if(d)d.classList.add("roll");
+
+ setTimeout(()=>{
+  dice=Math.floor(Math.random()*6)+1;
+  need=dice;
+  placed=0;
+  g2Phase="drop";
+  game2Refresh("DROP");
+
+  if(!previewLoop){
+   previewLoop=true;
+   requestAnimationFrame(updatePreview);
+  }
+ },700);
+}
+
+function game2Refresh(msg){
+ if(screen!=="g2")return;
+
+ let mid=document.querySelector(".hud .panel:nth-child(2)");
+ if(mid)mid.innerHTML=diceHTML();
+
+ let gp=document.getElementById("g2p");
+ if(gp)gp.textContent=placed+"/"+(need||"-");
+
+ let gm=document.getElementById("g2msg");
+ if(gm)gm.textContent=msg;
+}
+
+function dropG2(){
+ if(g2Phase!=="drop"||fall)return;
+
+ let p=getDropPos();
+ let body=makeDiceBlock(p.x,p.y);
+
+ Matter.Composite.add(engine.world,body);
+ floors.push(body);
+
+ placed++;
+ fx("drop");
+
+ if(placed>=need)setTimeout(nextG2,850);
+ game2Refresh(placed+"/"+need);
+}
+
+function nextG2(){
+ if(fall)return;
+
+ player=player===1?2:1;
+ turn=player;
+ g2Phase="roll";
+ need=0;
+ placed=0;
+ dice=1;
+ previewLoop=false;
+
+ let pv=document.getElementById("preview");
+ if(pv)pv.style.display="none";
+
+ document.querySelector(".hud .panel:nth-child(1)").innerHTML=`P${player}<span class="big" id="g2p">READY</span>`;
+ game2Refresh("ROLL");
+}
+
+function updateG2(){
+ if(!floors.length||screen!=="g2")return;
+
+ let avg=0,minY=9999,ang=0,topSwing=0;
+
+ floors.forEach((b,i)=>{
+  avg+=b.position.x-stageW/2;
+  minY=Math.min(minY,b.position.y);
+  ang+=Math.abs(b.angle);
+  topSwing+=Math.abs(b.position.x-stageW/2)*(i/floors.length);
+ });
+
+ avg/=floors.length;
+
+ let bal=document.getElementById("bal");
+ if(bal)bal.textContent=Math.round(avg);
+
+ let targetCamera=Math.max(0,stageH*.45-minY);
+ cameraY+=(targetCamera-cameraY)*.14;
+
+ render.bounds.min.y=-cameraY;
+ render.bounds.max.y=stageH-cameraY;
+
+ let danger=Math.abs(avg)+ang*20+floors.length*.4;
+ stage.classList.toggle("warn",danger>42);
+
+ let sway=Math.sin(Date.now()/130)*Math.min(9,(topSwing/45)+(floors.length*.18));
+ canvas.style.transform=`translateX(${sway}px) rotate(${sway*.08}deg)`;
+
+ if(
+  Math.abs(avg)>86 ||
+  ang>2.9 ||
+  floors.some(b=>b.position.y+cameraY>stageH+180)
+ ){
+  collapseG2();
+ }
+}
+
+function collapseG2(){
+ if(fall)return;
+ fall=true;
+ g2Phase="end";
+ fx("bad");
+
+ let m=document.getElementById("g2msg");
+ if(m)m.textContent="LOSE";
+
+ stage.classList.add("warn");
+
+ floors.forEach(b=>{
+  Matter.Body.applyForce(b,b.position,{x:(Math.random()-.5)*.08,y:-.03});
+  Matter.Body.setAngularVelocity(b,(Math.random()-.5)*.55);
+ });
+}
+
+document.addEventListener("click",e=>{
+ if(screen==="g2"&&e.target.closest("#stage"))dropG2();
+});
+
+function renderApp(){
+ if(screen==="select")selectScreen();
+ else if(screen==="g1")phase==="menu"?game1Menu():drawG1("");
+ else game2Start();
+}
+
+selectScreen();
 </script>
 </body>
 </html>
