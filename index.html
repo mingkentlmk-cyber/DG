@@ -63,7 +63,7 @@ button:active{transform:translate(3px,3px);box-shadow:1px 1px #000}
 .previewDice{z-index:5;transform:translate(-50%,-50%)}
 .fallDie{z-index:6;transform:translate(-50%,-50%);transition:none}
 .towerDie{z-index:2;transition:left .18s ease,top .26s ease,transform .18s ease}
-.land{animation:land .18s ease}
+.land{animation:land .10s ease}
 .warn{animation:warn .25s infinite alternate}
 .dangerShake{animation:dangerShake .16s infinite alternate}
 .towerMini{position:absolute;right:6px;top:6px;width:58px;height:92px;border:3px solid #fff;background:#071027;box-shadow:3px 3px #000,0 0 10px #4d7cff;z-index:8;overflow:hidden}
@@ -77,7 +77,7 @@ button:active{transform:translate(3px,3px);box-shadow:1px 1px #000}
 @keyframes spin{to{transform:rotateX(560deg) rotateY(660deg) rotateZ(180deg)}}
 @keyframes warn{from{filter:drop-shadow(0 0 0 red)}to{filter:drop-shadow(0 0 18px red)}}
 @keyframes dangerShake{from{transform:translateX(-5px) rotate(-1.2deg)}to{transform:translateX(5px) rotate(1.2deg)}}
-@keyframes land{0%{transform:scaleY(.78) scaleX(1.14) translateY(3px)}45%{transform:scaleY(1.06) scaleX(.94) translateY(-2px)}100%{transform:scale(1) translateY(0)}}
+@keyframes land{0%{filter:brightness(1.45)}100%{filter:brightness(1)}}
 </style>
 </head>
 <body>
@@ -131,8 +131,38 @@ function nextTop(){let c=visualCount(),L=layoutFor(c);return L.ground-c*64+L.cam
 function rollG2(){if(g2.phase!=="roll"||g2.fall)return;g2.phase="rolling";fx("roll");document.querySelector(".dice").classList.add("roll");setTimeout(()=>{g2.dice=Math.floor(Math.random()*6)+1;dice=g2.dice;g2.need=g2.dice;g2.placed=0;g2.phase="drop";g2.pendingSlots=1;renderTower();refreshG2("DROP");previewLoop()},650)}
 function previewLoop(){if(screen!=="g2"||g2.phase!=="drop"||g2.fall)return;let x=g2.w/2+swingX(),p=document.getElementById("preview"),gh=document.getElementById("ghost");if(p){p.style.display="block";p.style.left=x+"px";p.style.top="106px";p.innerHTML=pips(g2.dice)}if(gh){gh.style.display="block";gh.style.left=x+"px";gh.style.top=(nextTop()+31)+"px"}requestAnimationFrame(previewLoop)}
 function dropG2(){if(g2.phase!=="drop"||g2.fall||g2.busy)return;g2.busy=true;let raw=swingX(),prev=g2.tower[g2.tower.length-1],x=raw;if(prev&&Math.abs(raw-prev.x)<8)x=prev.x+(raw-prev.x)*.05;g2.pendingSlots=1;renderTower();let targetCenter=nextTop()+31,fd=document.createElement("div");fd.className="fallDie";fd.innerHTML=pips(g2.dice);fd.style.left=(g2.w/2+x)+"px";fd.style.top="106px";document.getElementById("stage").appendChild(fd);fx("drop");animateDrop(fd,x,targetCenter)}
-function animateDrop(fd,x,targetCenter){let start=106,overshoot=targetCenter-10,t0=null;function fall(ts){if(!t0)t0=ts;let p=Math.min(1,(ts-t0)/360),ease=1-Math.pow(1-p,3);fd.style.top=(start+(overshoot-start)*ease)+"px";if(p<1)requestAnimationFrame(fall);else{let b0=null;function bounce(ts2){if(!b0)b0=ts2;let q=Math.min(1,(ts2-b0)/180);fd.style.top=(overshoot+(targetCenter-overshoot)*(1-Math.pow(1-q,2)))+"px";if(q<1)requestAnimationFrame(bounce);else landDie(fd,x)}requestAnimationFrame(bounce)}}requestAnimationFrame(fall)}
-function landDie(fd,x){fd.classList.add("land");setTimeout(()=>{fd.remove();g2.pendingSlots=0;g2.tower.push({x,v:g2.dice,rot:x/8,land:true});if(g2.tower.length>g2.best){g2.best=g2.tower.length;localStorage.setItem('diceTowerBest',g2.best)}g2.placed++;g2.busy=false;fx("land");renderTower();if(g2.placed>=g2.need)setTimeout(nextG2,450);else{g2.pendingSlots=1;renderTower()}refreshG2(g2.placed+"/"+g2.need)},110)}
+function animateDrop(fd,x,targetCenter){
+ let start=106;
+ let contact=targetCenter-1; // stop 1px before contact to avoid visual clipping
+ let t0=null;
+ function fall(ts){
+  if(!t0)t0=ts;
+  let p=Math.min(1,(ts-t0)/300);
+  let ease=1-Math.pow(1-p,3);
+  fd.style.top=(start+(contact-start)*ease)+"px";
+  if(p<1)requestAnimationFrame(fall);
+  else landDie(fd,x);
+ }
+ requestAnimationFrame(fall);
+}
+function landDie(fd,x){
+ fx("land");
+ fd.classList.add("land");
+ g2.pendingSlots=0;
+ g2.tower.push({x,v:g2.dice,rot:x/8,land:true});
+ if(g2.tower.length>g2.best){
+  g2.best=g2.tower.length;
+  localStorage.setItem('diceTowerBest',g2.best);
+ }
+ g2.placed++;
+ g2.busy=false;
+ renderTower();
+ // Remove after render so there is no empty frame.
+ setTimeout(()=>fd.remove(),20);
+ if(g2.placed>=g2.need)setTimeout(nextG2,450);
+ else{g2.pendingSlots=1;renderTower()}
+ refreshG2(g2.placed+"/"+g2.need);
+}
 function renderTower(){let stack=document.getElementById("stack");if(!stack)return;let c=visualCount(),L=layoutFor(c),html="";g2.tower.forEach((b,i)=>{let y=L.ground-(i+1)*64+L.cam;html+=`<div class="towerDie ${b.land?"land":""}" style="left:calc(50% - 31px + ${b.x}px);top:${y}px;transform:rotate(${b.rot}deg)">${pips(b.v)}</div>`;b.land=false});stack.innerHTML=html;let avg=g2.tower.reduce((a,b)=>a+b.x,0)/(g2.tower.length||1),last=g2.tower.at(-1),prev=g2.tower.at(-2),mis=prev?Math.abs(last.x-prev.x):0,total=g2.tower.reduce((a,b,i)=>i?a+Math.abs(b.x-g2.tower[i-1].x):a,0),rot=g2.tower.reduce((a,b)=>a+Math.abs(b.rot),0),danger=Math.abs(avg)*1.2+total*1.08+rot*.96+g2.tower.length*.5;if(mis>26)g2.debt+=8;else g2.debt=Math.max(0,g2.debt-3);if(danger>70)g2.debt+=2;let bal=document.getElementById("bal");if(bal)bal.textContent=Math.round(avg);let st=document.getElementById("stage");if(st)st.classList.toggle("warn",danger>62);g2.stab=Math.max(0,100-(danger*.85)-g2.debt*.55);let sway=Math.sin(Date.now()/110)*Math.min(16,mis*.35+Math.abs(avg)*.08+g2.tower.length*.2);stack.style.transform=`translateX(${sway}px) rotate(${sway*.12}deg)`;stack.classList.toggle("dangerShake",danger>78);updateStats();if(g2.tower.length&& (Math.abs(avg)>82||mis>34||g2.debt>60||g2.stab<=0))collapseG2()}
 function nextG2(){
  if(g2.fall)return;
